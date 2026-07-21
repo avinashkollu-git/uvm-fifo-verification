@@ -44,11 +44,31 @@ The scoreboard models the FIFO as a queue and enforces first-in first-out order
 and data integrity, accounting for the one-cycle read latency of the registered
 output. This is the same algorithm proven by the local testbench below.
 
-## Running the UVM environment (EDA Playground, free)
+## Running the UVM environment (verified locally on Verilator)
 
-Icarus Verilog does not support UVM, so the UVM environment is run on
+This environment has been run end to end on **Verilator 5.050** with the
+**Accellera UVM library (2020.3.1)** and the **z3** solver for constrained
+randomization. Result:
+
+```
+UVM_INFO [SCB] checks=1326 errors=0
+UVM_INFO [SCB] RESULT: PASS
+UVM_ERROR :    0
+UVM_FATAL :    0
+```
+
+The full log is in `docs/uvm_run.log`. To reproduce (needs `verilator`, the
+Accellera `uvm-core` source pointed to by `UVM_HOME`, and `z3` on PATH):
+
+```
+make uvm
+```
+
+## Running the UVM environment (EDA Playground, free, no local tools)
+
+The same environment also runs on
 [EDA Playground](https://www.edaplayground.com), which provides free
-UVM-capable simulators.
+UVM-capable simulators (useful if you do not want to install Verilator).
 
 1. Open EDA Playground and sign in (free).
 2. Left pane, set **UVM/OVM** to **UVM 1.2**, and pick a simulator such as
