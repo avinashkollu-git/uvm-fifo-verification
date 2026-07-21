@@ -2,3 +2,4 @@
 *.vcd
 build.log
 obj_dir/
+formal/*.smt2

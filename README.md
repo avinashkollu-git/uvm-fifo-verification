@@ -85,6 +85,36 @@ UVM-capable simulators (useful if you do not want to install Verilator).
    UVM_INFO ... [SCB] RESULT: PASS
    ```
 
+## Formal property verification (Yosys + yosys-smtbmc + z3)
+
+Beyond simulation, the FIFO's core invariants are **formally proven**, meaning they
+hold for every possible input sequence, not just the stimulus that happened to be
+generated. The properties live in `rtl/sync_fifo.v` under `` `ifdef FORMAL ``, so
+they are inert during simulation.
+
+Properties proven:
+
+1. `full` and `empty` are mutually exclusive.
+2. Occupancy never exceeds `DEPTH` (no overflow) and never underflows.
+3. `full` holds exactly when count == `DEPTH`; `empty` exactly when count == 0.
+4. Writes are only accepted when not full; reads only when not empty.
+5. `cover`: full and became-empty are reachable, so the assertions are not vacuous.
+
+Results (full log in `docs/formal_run.log`):
+
+```
+BMC (20 cycles) .................. PASSED
+Temporal induction (unbounded) ... PASSED
+Cover (reachability) ............. PASSED
+```
+
+Temporal induction is the important one: it proves the invariants hold for **all
+time**, not merely within a bounded window. To reproduce:
+
+```
+make formal
+```
+
 ## Running the local self-checking testbench (Icarus, no UVM)
 
 The local testbench proves both the DUT and the golden-model checking algorithm

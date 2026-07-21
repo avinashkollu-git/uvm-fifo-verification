@@ -51,6 +51,51 @@ module sync_fifo #(
     assign empty = (wr_ptr == rd_ptr);
     assign full  = (wr_ptr[ADDR_W] != rd_ptr[ADDR_W]) &&
                    (wr_ptr[ADDR_W-1:0] == rd_ptr[ADDR_W-1:0]);
+
+// -----------------------------------------------------------------------------
+// Formal properties. Compiled only when FORMAL is defined, so simulation runs
+// (Icarus, Verilator/UVM) are unaffected. Proven with Yosys + yosys-smtbmc + z3.
+// -----------------------------------------------------------------------------
+`ifdef FORMAL
+    // Number of entries currently held. The extra wrap bit makes this subtraction
+    // give the true occupancy (0 .. DEPTH).
+    wire [ADDR_W:0] f_count = wr_ptr - rd_ptr;
+
+    // Only start checking once we have a previous cycle to reason about.
+    reg f_past_valid = 1'b0;
+    always @(posedge clk) f_past_valid <= 1'b1;
+
+    always @(posedge clk) begin
+        if (f_past_valid && rst_n) begin
+            // 1. full and empty are mutually exclusive.
+            assert (!(full && empty));
+
+            // 2. Occupancy never exceeds DEPTH (no overflow) and, being unsigned,
+            //    never wraps below zero (no underflow).
+            assert (f_count <= DEPTH[ADDR_W:0]);
+
+            // 3. The flags exactly describe the occupancy.
+            assert (full  == (f_count == DEPTH[ADDR_W:0]));
+            assert (empty == (f_count == 0));
+
+            // 4. A write is only accepted when not full; a read only when not empty.
+            if ($past(rst_n)) begin
+                if ($past(full))  assert (wr_ptr == $past(wr_ptr) || $past(!wr_en));
+                if ($past(empty)) assert (rd_ptr == $past(rd_ptr));
+            end
+        end
+    end
+
+    // Reachability: prove these states are actually attainable, so the
+    // assertions above are not vacuously true.
+    always @(posedge clk) begin
+        if (f_past_valid && rst_n) begin
+            cover (full);
+            cover (empty && $past(!empty));
+        end
+    end
+`endif
+
 endmodule
 
 `default_nettype wire

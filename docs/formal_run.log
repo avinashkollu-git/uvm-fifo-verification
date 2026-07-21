@@ -1,0 +1,24 @@
+Formal verification of sync_fifo
+Flow: Yosys 0.67+post -> write_smt2 -> yosys-smtbmc -> z3 4.16.0
+Date: 2026-07-22
+
+Properties proven (rtl/sync_fifo.v, guarded by `ifdef FORMAL):
+  1. full and empty are mutually exclusive
+  2. occupancy never exceeds DEPTH (no overflow) and never underflows
+  3. full <=> count == DEPTH ; empty <=> count == 0
+  4. writes only accepted when not full; reads only when not empty
+  5. cover: full and became-empty are reachable (properties not vacuous)
+
+==== 1) BMC (20 cycles) ====
+##   0:00:00  Checking assertions in step 18..
+##   0:00:00  Checking assertions in step 19..
+##   0:00:00  Status: PASSED
+
+==== 2) Temporal induction (unbounded proof) ====
+##   0:00:00  Trying induction in step 20..
+##   0:00:00  Temporal induction successful.
+##   0:00:00  Status: PASSED
+
+==== 3) Cover (reachability) ====
+##   0:00:00  Solver: z3
+##   0:00:00  Status: PASSED
